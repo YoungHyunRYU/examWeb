@@ -1,37 +1,100 @@
-<!doctype html>
-<html>
+<!DOCTYPE html>
+<html lang="en">
+
 <head>
-<title>WEB1 - html</title>
-<meta charset="utf-8"> </head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script type="text/javascript"
+        src="https://openapi.map.naver.com/openapi/v3/maps.js?ncpClientId=yozhlbbuf8"></script>
+    <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@1.5.7/css/pico.min.css">
+
+    <title>Document</title>
+</head>
+
 <body>
-    <h1><a href="index.html">WEB</a></h1> 
-    <ol>
-        <li><a href="1.html">HTML</a></li>
-        <li><a href="2.html">CSS</a></li>
-        <li><a href="3.html">JavaScript</a></li>
-    </ol>
-<h2>HTML</h2>
-    <p>
-        <a href="https://www.w3.org/TR/html5/" target="_blank" title="html5 speicification">Hypertext
-    Markup Language (HTML)
-    </a> 
-    is the standard markup language for 
-<strong>creating 
-    <u>web</u> 
-    pages
-</strong> 
-and web applications.Web browsers receive HTML documents from a web server or from local storage and render them into multimedia web pages. HTML describes the structure of a web page semantically and originally included cues for the appearance of the document.
-    </p>
-    <p style="margin-top:45px;">
-HTML elements are the building blocks of HTML pages.
-With HTML constructs, images and other objects, such as interactive forms,
-may be embedded into the rendered page.
-It provides a means to create structured documents by denoting structural semantics for text such as headings, paragraphs, lists, links, quotes and other items.
-HTML elements are delineated by tags, written using angle brackets.
-    </p>
-    <iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/TppPPsrAc5U" 
-        title="YouTube video player" frameborder="0" 
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
-        allowfullscreen></iframe>
+    <nav>
+        <ul>
+            <li><strong>프로그래밍 실습, 가정의학과 위치</strong></li>
+        </ul>
+    </nav>
+    <div id="map" style="width:100%;height:1000px;"></div>
+    <div id="hospital-list">
+        <table>
+            <thead>
+                <tr>
+                    <th>병원 이름</th>
+                    <th>주소</th>
+                    <th>전화번호</th>
+                </tr>
+            </thead>
+            <tbody id="hospital-tbody">
+            </tbody>
+        </table>
+    </div>
+    <script>
+        var mapOptions = {
+            center: new naver.maps.LatLng(35.137575773, 129.100374262),
+            zoom: 15,
+            minZoom: 6,
+            zoomControl: true,
+        };
+        var map = new naver.maps.Map('map', mapOptions);
+        const url = "http://apis.data.go.kr/6260000/MedicInstitService/MedicalInstitInfo?serviceKey=p5%2BwHG15mP76CNCwKauyRH5kRpkB%2BG7I6t94MiYn56FN13z5xJBTD1WMfTrH8pR%2BY2aNCAiehCJNY4CdmC36Fg%3D%3D&numOfRows=6846&pageNo=1&resultType=json";
+
+        function fetchData() {
+            fetch(url)
+                .then((res) => {
+                    if (!res.ok) {
+                        throw new Error('Network response was not ok ' + res.statusText);
+                    }
+                    return res.json();
+                })
+                .then((myJson) => {
+                    overlayDataOnMap(myJson.MedicalInstitInfo.body.items.item);
+                })
+        }
+
+        function overlayDataOnMap(items) {
+            const hospitalTbody = document.getElementById('hospital-tbody');
+            hospitalTbody.innerHTML = ''; // 기존 항목 지우기
+
+            items.forEach(item => {
+                if ((item.exam_part === "가정의학과") && item.lat && item.lng) {
+                    var marker = new naver.maps.Marker({
+                        map: map,
+                        position: new naver.maps.LatLng(parseFloat(item.lat), parseFloat(item.lng))
+                    });
+
+                    var contentString = `
+                        <div>
+                            <h3>${item.instit_nm}</h3>
+                            <p>주소: ${item.street_nm_addr}</p>
+                            <p>전화번호: ${item.tel}</p>
+                        </div>
+                    `;
+                    var infowindow = new naver.maps.InfoWindow({
+                        content: contentString
+                    });
+
+                    naver.maps.Event.addListener(marker, 'click', function () {
+                        infowindow.open(map, marker);
+                    });
+
+                    // 병원 목록에 테이블 행 추가
+                    hospitalTbody.innerHTML += `
+                        <tr>
+                            <td>${item.instit_nm}</td>
+                            <td>${item.street_nm_addr}</td>
+                            <td>${item.tel}</td>
+                        </tr>
+                    `;
+                }
+            });
+        }
+
+        window.onload = fetchData;
+    </script>
+
 </body>
+
 </html>
